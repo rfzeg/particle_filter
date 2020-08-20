@@ -1,4 +1,6 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Launches AMCL with uniform random particles -->
+
 <launch>
   <param name="/use_sim_time" value="true"/>
 
