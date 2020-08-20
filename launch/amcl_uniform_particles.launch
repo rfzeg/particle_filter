@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="/use_sim_time" value="true"/>
+
+  <!-- amcl -->
+  <include file="$(find particle_filter)/launch/amcl_robot.launch" /> 
+
+  <!-- MOVE_BASE -->
+  <include file="$(find particle_filter)/launch/move_base.launch" />
+
+  <!-- set amcl with uniform random particles -->
+  <node pkg="rosservice" type="rosservice" name="global_loc" args="call --wait /global_localization" />
+
+  <!-- Launching Rviz -->   particle_filter
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find particle_filter)/rviz/navigation.rviz" />
+
+</launch>
