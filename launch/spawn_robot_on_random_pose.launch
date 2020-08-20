@@ -7,6 +7,9 @@
     <param name="frame_id" value="/map" />
   </node>
 
+  <arg name="model" default="$(find particle_filter)/urdf/turtlebot2.urdf"/>
+  <param name="robot_description" textfile="$(arg model)" />
+
   <!-- Arguments that can be passed to this launch file from the CLI, for example paused:=true -->
   <arg name="paused" default="false"/>
   <arg name="use_sim_time" default="true"/>
@@ -34,7 +37,7 @@
   <!-- The relative path of the SDF file inside the package, including .sdf extension -->
   <arg name="relative_path" default="/urdf/turtlebot2.urdf"/>
   <!-- Assign the name of the model in Gazebo -->
-  <arg name="model_name_in_simulation" default="turtlebot2"/>
+  <arg name="model_name_in_simulation" default="robot_base"/>
   <!-- Lenght of one side of a square shape model/robot footprint in meters -->
   <arg name="footprint_side" default="0.4"/>
 
@@ -45,5 +48,8 @@
     <param name="model_name_in_simulation" type="string" value="$(arg model_name_in_simulation)"/>
     <param name="footprint_side" value="$(arg footprint_side)"/>
   </node>
+
+  <!-- Broadcast TF values for all elements in the URDF description tree such as the IMU -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
 </launch>
