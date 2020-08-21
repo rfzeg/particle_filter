@@ -477,6 +477,8 @@
          <odometryFrame>/odom</odometryFrame>
          <robotBaseFrame>/base_footprint</robotBaseFrame>
          <publishWheelJointState>true</publishWheelJointState>
+        <!-- Set to true to publish transforms for the wheel links, defaults to false -->
+         <publishWheelTF>true</publishWheelTF>
          <legacyMode>true</legacyMode>
       </plugin>
    </gazebo>

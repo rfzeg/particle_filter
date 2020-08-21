@@ -49,7 +49,9 @@
     <param name="footprint_side" value="$(arg footprint_side)"/>
   </node>
 
-  <!-- Broadcast TF values for all elements in the URDF description tree such as the IMU -->
+  <!-- Broadcast TF values for all fixed elements in the URDF description tree such as the IMU -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+  <!-- Broadcast TF values for all moving elements in the URDF description tree such as wheels -->
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
 
 </launch>
