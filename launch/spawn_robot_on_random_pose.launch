@@ -1,36 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     
-  <!-- Run the map server -->
-  <arg name="map" default="$(find particle_filter)/maps/jackal_race.yaml"/>
-  <node type="map_server" pkg="map_server" name="map_server_node" output="screen" args="$(arg map)">
-    <param name="frame_id" value="/map" />
-  </node>
-
-  <arg name="model" default="$(find particle_filter)/urdf/turtlebot2.urdf"/>
-  <param name="robot_description" textfile="$(arg model)" />
-
-  <!-- Arguments that can be passed to this launch file from the CLI, for example paused:=true -->
-  <arg name="paused" default="false"/>
-  <arg name="use_sim_time" default="true"/>
-  <arg name="gui" default="true"/>
-  <arg name="headless" default="false"/>
-  <arg name="debug" default="false"/>
-  <arg name="physics" default="ode"/>
-  <arg name="extra_gazebo_args" default="--verbose"/>
-
-  <!-- Change the name of the world to be launched as required -->
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find particle_filter)/worlds/jackal_race.world"/>
-    <arg name="debug" value="$(arg debug)" />
-    <arg name="gui" value="$(arg gui)" />
-    <arg name="paused" value="$(arg paused)"/>
-    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
-    <arg name="headless" value="$(arg headless)"/>
-    <arg name="extra_gazebo_args" value="$(arg extra_gazebo_args)"/>
-    <arg name="physics" default="$(arg physics)"/>
-  </include>
-
   <!-- Arguments for spawn_in_free_space_node with defaults provided -->
   <!-- The name of the package where SDF file is located -->
   <arg name="package_name" default="particle_filter"/>
@@ -48,10 +18,5 @@
     <param name="model_name_in_simulation" type="string" value="$(arg model_name_in_simulation)"/>
     <param name="footprint_side" value="$(arg footprint_side)"/>
   </node>
-
-  <!-- Broadcast TF values for all fixed elements in the URDF description tree such as the IMU -->
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
-  <!-- Broadcast TF values for all moving elements in the URDF description tree such as wheels -->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
 
 </launch>
