@@ -4,7 +4,7 @@
   <!-- Run the map server -->
   <arg name="map" default="$(find particle_filter)/maps/jackal_race.yaml"/>
   <node type="map_server" pkg="map_server" name="map_server_node" output="screen" args="$(arg map)">
-    <param name="frame_id" value="/map" />
+    <!-- <param name="frame_id" value="/map" /> -->
   </node>
 
   <arg name="model" default="$(find particle_filter)/urdf/turtlebot2.urdf"/>
