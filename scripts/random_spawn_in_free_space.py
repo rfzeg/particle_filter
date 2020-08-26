@@ -12,7 +12,8 @@ from geometry_msgs.msg import Pose
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import MapMetaData
 from nav_msgs.srv import GetMap
-from gazebo_msgs.srv import SpawnModel
+from gazebo_msgs.srv import SpawnModel, GetWorldProperties, SetModelState
+from gazebo_msgs.msg import ModelState
 import rosservice
 
 import random
@@ -47,6 +48,9 @@ class SpawnInFreeSpace:
         self.side_of_squared_footprint = 0.2
         # occupancy grid array for configuration space
         self.cspace_map = []
+        self.package_name = ""
+        self.relative_path = ""
+        self.model_name = ""
     
     def parse_empty_cells(self, map_array):
         """
@@ -112,6 +116,50 @@ class SpawnInFreeSpace:
         rospy.logdebug("Free space probability value in that cell is: %d", self.occupancy_grid[self.selected_random_empty_cell_idx])
         self.selected_grid_x, self.selected_grid_y = self.indexToGridCoord(self.selected_random_empty_cell_idx)
 
+    def detect_model(self):
+        """ Verifies if 'self.model_name' exists in Gazebo
+            @return True or False
+        """
+        rospy.wait_for_service('gazebo/get_world_properties', timeout=10)
+        get_world_properties_proxy = rospy.ServiceProxy('gazebo/get_world_properties', GetWorldProperties)
+        try:
+          world_properties = get_world_properties_proxy()
+          get_world_properties_proxy.close()
+          if self.model_name in world_properties.model_names:
+            rospy.logdebug("Model detected: %s", self.model_name)
+            return True
+          else:
+            return False
+        except rospy.ServiceException, e:
+          rospy.logerr("Service call to '/gazebo/get_world_properties' failed: {}".format(e))
+          return False
+
+    def move_model_random(self):
+        """ Sets a new random Pose() and moves existent model
+            @return None
+        """
+         # find a new random empty cell
+        self.select_random_empty_cell()
+        rospy.loginfo("Wait for service 'gazebo/set_model_state'")
+        rospy.wait_for_service('gazebo/set_model_state', timeout=5)
+        set_model_state = rospy.ServiceProxy('gazebo/set_model_state', SetModelState)
+
+        # Define new pose (teleportation target pose)
+        state_msg = ModelState()
+        state_msg.model_name = self.model_name
+        state_msg.reference_frame = 'map'
+        state_msg.pose = self.gridToWorld(self.selected_grid_x,self.selected_grid_y)
+        # set identity quaternion
+        state_msg.pose.orientation.x = 0
+        state_msg.pose.orientation.y = 0
+        state_msg.pose.orientation.z = 0
+        state_msg.pose.orientation.w = 1
+
+        try:
+            set_model_state(state_msg)
+        except rospy.ServiceException, e:
+            rospy.logerr("Service call to 'gazebo/set_model_state' failed: {}".format(e))
+
     def spawn_model(self, pkg_name, relative_path_urdf, name_in_simulation, model_pose):
         """ Spawn URDF model as indicated by Pose() msg
             @param name of the ros package containing the model
@@ -128,6 +176,8 @@ class SpawnInFreeSpace:
             rospy.logerr("Cannot find model [%s], check model name and that model exists, I/O error message:  %s"%(model_object.name, err))
         except UnboundLocalError as error:
             rospy.logdebug("Cannot find package [%s], check package name and that package exists, error message:  %s"%(package_name, error))
+        except ResourceNotFound as e:
+            rospy.logdebug("Cannot find path to package [%s], check package name and that package exists, error message:  %s"%(package_name, e))
 
         try:
             rospy.logdebug("Waiting for service gazebo/spawn_urdf_model")
@@ -174,24 +224,30 @@ class SpawnInFreeSpace:
         grid_cell_map_y = int((world_pose.position.y + self.map_origin_y) / self.map_resolution)
         return grid_cell_map_x, grid_cell_map_y
 
-    def run(self):
+    def spawn(self):
+        # find random empty cell and spawn model
+        self.select_random_empty_cell()
+        self.spawn_model(self.package_name,self.relative_path,self.model_name,self.gridToWorld(self.selected_grid_x,self.selected_grid_y))
+        rospy.loginfo("Spawned model into Gazebo!")
+
+    def init(self):
         rospy.init_node('spawn_in_free_space_node', anonymous=False, log_level=rospy.INFO)
 
         # retrieve private configuration variables from parameter server
         if rospy.has_param("~package_name"):
-            package_name = rospy.get_param("~package_name")
+            self.package_name = rospy.get_param("~package_name")
         else:
-            package_name = "particle_filter"
+            self.package_name = "particle_filter"
             rospy.logwarn("No '~package_name' parameter found in parameter server, using default value '%s'", package_name)
         if rospy.has_param("~relative_path"):
-            relative_path = rospy.get_param("~relative_path")
+            self.relative_path = rospy.get_param("~relative_path")
         else:
-            relative_path = "/urdf/turtlebot2.urdf"
+            self.relative_path = "/urdf/turtlebot2.urdf"
             rospy.logwarn("No '~relative_path' parameter found in parameter server, using default value '%s'", relative_path)
         if rospy.has_param("~model_name_in_simulation"):
-            model_name = rospy.get_param("~model_name_in_simulation")
+            self.model_name = rospy.get_param("~model_name_in_simulation")
         else:
-            model_name = "turtlebot2"
+            self.model_name = "turtlebot2"
             rospy.logwarn("No '~model_name_in_simulation' parameter found in parameter server, using default value '%s'", model_name)
         if rospy.has_param("~footprint_side"):
             self.side_of_squared_footprint = rospy.get_param("~footprint_side")
@@ -235,11 +291,25 @@ class SpawnInFreeSpace:
         self.generate_cspace_map(self.occupancy_grid)
         self.parse_empty_cells(self.cspace_map)
 
-        # find random empty cell and spawn model
-        self.select_random_empty_cell()
-        self.spawn_model(package_name,relative_path,model_name,self.gridToWorld(self.selected_grid_x,self.selected_grid_y))
 
+    def spin(self):
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            if (self.publish_cmap):
+                self.map_publisher.publish(self.map_msg)
+            try:
+                rate.sleep()
+            except rospy.exceptions.ROSInterruptException as e:
+                if rospy.core.is_shutdown():
+                    break
+                raise
 if __name__ == '__main__':
-
     spawn_model = SpawnInFreeSpace()
-    spawn_model.run()
+    spawn_model.init()
+    if spawn_model.detect_model():
+      # find new random empty cell and move model
+      spawn_model.move_model_random()
+    else:
+      # find random empty cell and spawn model
+      spawn_model.spawn()
+    # spawn_model.spin()
