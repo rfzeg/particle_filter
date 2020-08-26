@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Top-level launch file for Unit 5, "Particle Filter" Exercise 1 -->
+<!-- Requires: Gazebo Jackal.world simulation, e.g. gazebo_unit5_simulation.launch -->
+
+<launch>
+
+  <!-- Run the map server -->
+  <!-- Rviz launch -->
+  <!-- Broadcasts TF values -->
+  <!-- Load robot_description -->
+  <include file="$(find particle_filter)/launch/auxiliary_nodes.launch"/>
+
+  <!-- Place the robot on a predefined unobstructed grid cell -->
+  <!-- Spawn a robot into Gazebo -->
+  <!-- Requires: urdf 'robot_description' in parameter server -->
+  <arg name= "pos_x" default = "-3.5"/>
+  <arg name= "pos_y" default = "5.0"/>
+  <arg name= "pos_z" default = "0.0"/>
+  <arg name= "yaw" default = "0"/>
+  <arg name= "robot_name" default= "robot_base"/>
+
+  <node name="urdf_robot_model_spawner" pkg="gazebo_ros" type="spawn_model"
+    args="-param robot_description
+    -urdf
+    -x $(arg pos_x)
+    -y $(arg pos_y)
+    -z $(arg pos_z)
+    -Y $(arg yaw)
+    -model $(arg robot_name)"
+	respawn="false" output="screen"/>
+
+  <!-- Starts AMCL configured -->
+  <include file="$(find particle_filter)/launch/amcl_filter_exercise1.launch"/>
+
+</launch>
