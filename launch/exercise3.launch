@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Top-level launch file for Unit 5, "Particle Filter" Exercise 3 -->
+<!-- Requires: Gazebo Jackal.world simulation, e.g. gazebo_unit5_simulation.launch -->
+
+<launch>
+
+  <!-- Run the map server -->
+  <!-- Rviz launch (use argument substitution feature) -->
+  <!-- Broadcasts TF values -->
+  <!-- Load robot_description -->
+  <arg name="rvizconfig" default="$(find particle_filter)/rviz/amcl_exercise3.rviz" />
+  <include file="$(find particle_filter)/launch/auxiliary_nodes.launch">
+    <arg name="rvizconfig" default="$(arg rvizconfig)"/>
+  </include>
+
+  <!-- Place the robot on a predefined unobstructed grid cell -->
+  <!-- Spawn a robot into Gazebo -->
+  <!-- Requires: urdf 'robot_description' in parameter server -->
+  <arg name= "pos_x" default = "-8.0"/>
+  <arg name= "pos_y" default = "5.0"/>
+  <arg name= "pos_z" default = "0.0"/>
+  <arg name= "yaw" default = "0"/>
+  <arg name= "robot_name" default= "robot_base"/>
+
+  <node name="urdf_robot_model_spawner" pkg="gazebo_ros" type="spawn_model"
+    args="-param robot_description
+    -urdf
+    -x $(arg pos_x)
+    -y $(arg pos_y)
+    -z $(arg pos_z)
+    -Y $(arg yaw)
+    -model $(arg robot_name)"
+	respawn="false" output="screen"/>
+
+ <!-- Starts AMCL configured -->
+
+  <arg name="min_particles"   default="10000"/>
+  <arg name="max_particles"   default="10000"/>
+  <arg name="resample_interval"  default="1"/>
+  <arg name="initial_cov_xx"  default="4.00"/>
+  <arg name="initial_cov_yy"  default="4.00"/>
+  <arg name="initial_cov_aa"  default="2.4674"/> <!-- (PI/2)*(PI/2) radian -->
+  <arg name="laser_model_type" default="beam"/>
+  <arg name="laser_likelihood_max_dist" default="2.0"/>
+  <arg name="laser_max_beams" default="30"/>
+ 
+  <include file="$(find particle_filter)/launch/amcl.launch">
+    <arg name="initial_pose_x" default="$(arg pos_x)"/>
+    <arg name="initial_pose_y" default="$(arg pos_y)"/>
+    <arg name="initial_cov_xx"  default="$(arg initial_cov_xx)"/>
+    <arg name="initial_cov_yy"  default="$(arg initial_cov_yy)"/>
+    <arg name="initial_cov_aa"  default="$(arg initial_cov_aa)"/>
+    <arg name="min_particles" default="$(arg min_particles)"/>
+    <arg name="max_particles" default="$(arg min_particles)"/>
+
+    <arg name="resample_interval"  default="$(arg resample_interval)"/>
+    <arg name="laser_model_type" default="$(arg laser_model_type)"/>
+    <arg name="laser_likelihood_max_dist" default="$(arg laser_likelihood_max_dist)"/>
+    <arg name="laser_max_beams"           default="$(arg laser_max_beams)"/>
+
+  </include>
+
+  <!-- Define whether to launch AMCL with uniform random particles or not -->
+  <arg name="uniform_random_particles" default="true" />
+  <!-- set amcl with uniform random particles -->
+  <node if="$(arg uniform_random_particles)" pkg="rosservice" type="rosservice" name="global_loc" args="call --wait /global_localization" />
+
+
+</launch>
