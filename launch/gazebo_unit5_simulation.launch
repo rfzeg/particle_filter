@@ -2,6 +2,27 @@
 <!-- Gazebo Course Simulation for Unit 5: "Particle Filter" -->
 
 <launch>
+
+  <arg name="model" default="$(find particle_filter)/urdf/turtlebot2.urdf"/>
+  <param name="robot_description" textfile="$(arg model)" />
+
+  <!-- Spawn a robot into Gazebo -->
+  <!-- Requires: urdf 'robot_description' in parameter server -->
+  <arg name= "pos_x" default = "0.0"/>
+  <arg name= "pos_y" default = "0.0"/>
+  <arg name= "pos_z" default = "0.0"/>
+  <arg name= "yaw" default = "0"/>
+  <arg name= "robot_name" default= "robot_base"/>
+
+  <node name="urdf_robot_model_spawner" pkg="gazebo_ros" type="spawn_model"
+    args="-param robot_description
+    -urdf
+    -x $(arg pos_x)
+    -y $(arg pos_y)
+    -z $(arg pos_z)
+    -Y $(arg yaw)
+    -model $(arg robot_name)"
+	  respawn="false" output="screen"/>
     
   <!-- Arguments that can be passed to this launch file from the CLI, for example paused:=true -->
   <arg name="paused" default="false"/>
